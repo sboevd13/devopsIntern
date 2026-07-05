@@ -1,0 +1,70 @@
+
+networks:
+  devops_net:
+    driver: bridge
+
+volumes:
+  drupal_data:
+  db_data:
+
+services:
+  # 1. Сервис Базы Данных (MariaDB)
+  db_server:
+    image: mariadb:10.11
+    container_name: mariadb_container
+    restart: always
+    networks:
+      - devops_net
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: drupal_db
+      MYSQL_USER: drupal_user
+      MYSQL_PASSWORD: drupal_password
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # 2. Сервис Drupal
+  drupal_site:
+    image: drupal:10-php8.1-apache
+    container_name: drupal_container
+    restart: always
+    networks:
+      - devops_net
+    depends_on:
+      - db_server
+    environment:
+      DRUPAL_DB_HOST: db_server
+      DRUPAL_DB_NAME: drupal_db
+      DRUPAL_DB_USER: drupal_user
+      DRUPAL_DB_PASSWORD: drupal_password
+    volumes:
+      - drupal_data:/var/www/html/modules
+      # По ТЗ нам может понадобиться кастомизация путей, но пока оставляем стандартные волумы
+
+  # 3. Сервис Nginx (Реверс-прокси)
+  nginx_proxy:
+    image: nginx:alpine
+    container_name: nginx_container
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - devops_net
+    depends_on:
+      - drupal_site
+    volumes:
+      # Пробрасываем наш написанный конфиг
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Пробрасываем файл с паролем Basic Auth
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      # Пробрасываем SSL-сертификаты, которые сделали на первом этапе
+      - ./certs/devops.crt:/etc/nginx/ssl/devops.crt:ro
+      # Внимание: для ключа важны права, но в docker-mount они подтянутся нормально
+      - ./certs/devops.key:/etc/nginx/ssl/devops.key:ro
+      # Пробрасываем статические HTML страницы (каталог /opt/html/root/)
+      - ./html/root:/opt/html/root
+      # Пробрасываем upload папку из хост-системы для постоянного хранения
+      - ./html/upload:/opt/html/upload
+      # Пробрасываем скрипт генерации env в папку автозапуска Nginx
+      - ./nginx/generate-env-html.sh:/docker-entrypoint.d/40-generate-env-html.sh:ro

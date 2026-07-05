@@ -1,0 +1,34 @@
+---
+- name: Развертывание инфраструктуры DevOps проекта
+  hosts: webservers
+  become: true  # Выполнять задачи от имени root (как sudo)
+
+  tasks:
+    # 1. Вместо mkdir -p руками, используем модуль file
+    - name: Создать структуру директорий для проекта
+      ansible.builtin.file:
+        path: "/home/dmitriy/devops-intership/html/{{ item }}"
+        state: directory
+        owner: dmitriy
+        group: dmitriy
+        mode: '0755'
+      loop:
+        - root
+        - upload
+
+    # 2. Вместо ручной генерации .htpasswd, Ansible сделает это сам
+    # (Для этого модуля нужен пакет python3-passlib, мы сделаем это проще - скопируем готовый)
+    - name: Убедиться, что файл .htpasswd скопирован в нужную папку
+      ansible.builtin.copy:
+        src: ../nginx/.htpasswd
+        dest: /home/dmitriy/devops-intership/nginx/.htpasswd
+        owner: dmitriy
+        group: dmitriy
+        mode: '0644'
+
+    # 3. Самая мощная часть - управление Docker Compose
+    # Ansible сам проверит файл docker-compose.yml и поднимет контейнеры
+    - name: Запустить Docker Compose стек
+      community.docker.docker_compose_v2:
+        project_src: /home/dmitriy/devops-intership
+        state: present
