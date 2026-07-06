@@ -1,0 +1,29 @@
+---
+# 1. Сценарий СОЗДАНИЯ пользователя
+- name: "Создание пользователя {{ user_name }}"
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    state: present
+    shell: "{{ user_shell }}"
+    groups: "{{ user_groups }}"
+    append: yes          # Добавлять в группы, не удаляя из существующих
+    create_home: yes     # Создать домашнюю директорию
+  when: user_state == "present"
+
+- name: "Добавление публичного SSH-ключа для {{ user_name }}"
+  ansible.builtin.authorized_key:
+    user: "{{ user_name }}"
+    state: present
+    key: "{{ user_ssh_key }}"
+  when: 
+    - user_state == "present"
+    - user_ssh_key != ""  # Выполнять, только если ключ передан
+
+# 2. Сценарий УДАЛЕНИЯ пользователя
+- name: "Удаление пользователя {{ user_name }} и всех его файлов"
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    state: absent
+    remove: yes  # Удаляет домашнюю директорию и почтовый ящик пользователя (по ТЗ)
+    force: yes   # Принудительное удаление, даже если пользователь залогинен
+  when: user_state == "absent"

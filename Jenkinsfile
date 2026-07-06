@@ -1,42 +1,59 @@
 pipeline {
-    agent any // Запускать пайплайн на любом доступном сервере (раннере)
+    agent any // Предполагается, что на Jenkins-ноде установлен Docker и права настроены
 
     environment {
-        // Задаем переменные окружения, если они понадобятся внутри шагов
-        ANSIBLE_CONFIG = 'ansible/ansible.cfg'
+        REGISTRY_URL = "localhost:5000"
+        REGISTRY_USER = "registry_user"
+        REGISTRY_PASSWORD = "registry_password"
     }
 
     stages {
-        stage('Checkout') {
+        // 1. Запуск Bash-скрипта
+        stage('Run Bash Script') {
             steps {
-                // Скачивание актуального кода из Git
-                checkout scm
+                sh 'chmod +x ./bash/script.sh'
+                sh './bash/script.sh "https://ya.ru" "https://avidreaders.ru/download/voyna-i-mir-tom-1.html?f=txt"'
             }
         }
 
-        stage('Lint & Validate') {
+        // 2. Сборка образа Nginx и Push в Registry
+        stage('Build & Push Nginx') {
             steps {
-                echo 'Проверяем синтаксис Ansible плейбуков...'
-                // Проверяем плейбук на грубые ошибки перед запуском
-                sh 'ansible-playbook ansible/deploy.yml --syntax-check'
+                sh """
+                echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_URL} -u ${REGISTRY_USER} --password-stdin
+                docker build --build-arg BASIC_AUTH_USER=my_drupal_admin -t ${REGISTRY_URL}/nginx-proxy:latest -f ./nginx/Dockerfile .
+                docker push ${REGISTRY_URL}/nginx-proxy:latest
+                """
             }
         }
 
-        stage('Deploy Infrastructure') {
+        // 3. Деплой через docker-compose
+        stage('Deploy') {
             steps {
-                echo 'Запуск автоматического развертывания через Ansible...'
-                // Запускаем наш готовый плейбук на сервере целевой инфраструктуры
-                sh 'ansible-playbook ansible/deploy.yml'
+                sh 'docker compose down && docker compose up -d --build'
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Ура! Пайплайн успешно завершен, проект развернут.'
-        }
-        failure {
-            echo 'Что-то пошло не так. Проверь логи шагов выше.'
+        // 4. Тестирование (Параллельный запуск стадий в Jenkins)
+        stage('Parallel Tests') {
+            parallel {
+                stage('Test Upload') {
+                    steps {
+                        sh """
+                        mkdir -p ./html/upload
+                        echo "Jenkins test" > ./html/upload/jenkins_test.txt
+                        curl -k --resolve site.devops:443:127.0.0.1 -f https://site.devops/upload/jenkins_test.txt
+                        """
+                    }
+                }
+                stage('Test Drupal API') {
+                    steps {
+                        sh """
+                        curl -k --resolve site.devops:443:127.0.0.1 -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
+                        """
+                    }
+                }
+            }
         }
     }
 }

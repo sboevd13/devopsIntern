@@ -1,0 +1,66 @@
+stages:
+  - run_script
+  - build_and_push
+  - deploy
+  - test
+
+variables:
+  REGISTRY_URL: "localhost:5000"
+  REGISTRY_USER: "registry_user"
+  REGISTRY_PASSWORD: "registry_password"
+
+# ==========================================
+# ЭТАП 1: Запуск Bash-скрипта
+# ==========================================
+run_bash_script:
+  stage: run_script
+  tags:
+    - shell  # Указываем GitLab Runner использовать shell-исполнитель (где установлен Docker)
+  script:
+    - chmod +x ./bash/script.sh
+    - ./bash/script.sh "https://ya.ru" "https://avidreaders.ru/download/voyna-i-mir-tom-1.html?f=txt"
+
+# ==========================================
+# ЭТАП 2: Сборка и отправка Nginx в приватный реестр
+# ==========================================
+build_nginx_image:
+  stage: build_and_push
+  tags:
+    - shell
+  script:
+    - echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY_URL} -u ${REGISTRY_USER} --password-stdin
+    - docker build --build-arg BASIC_AUTH_USER=my_drupal_admin -t ${REGISTRY_URL}/nginx-proxy:latest -f ./nginx/Dockerfile .
+    - docker push ${REGISTRY_URL}/nginx-proxy:latest
+
+# ==========================================
+# ЭТАП 3: Деплой контейнеров через Docker Compose
+# ==========================================
+deploy_compose_stack:
+  stage: deploy
+  tags:
+    - shell
+  script:
+    - docker compose down
+    - docker compose up -d --build
+
+# ==========================================
+# ЭТАП 4: Тестирование (задания внутри одного этапа запускаются параллельно!)
+# ==========================================
+test_file_upload:
+  stage: test
+  tags:
+    - shell
+  script:
+    - mkdir -p ./html/upload
+    - echo "GitLab CI test upload" > ./html/upload/gitlab_test.txt
+    - curl -k --resolve site.devops:443:127.0.0.1 -f https://site.devops/upload/gitlab_test.txt
+
+test_drupal_api_ping:
+  stage: test
+  tags:
+    - shell
+  script:
+    # Проверяем код ответа от Drupal. Мы ожидаем увидеть 302 redirect или 200 OK
+    - RESPONSE_CODE=$(curl -k --resolve site.devops:443:127.0.0.1 -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php)
+    - echo "Drupal API HTTP Response Code -> $RESPONSE_CODE"
+    - if [ "$RESPONSE_CODE" -eq 200 ] || [ "$RESPONSE_CODE" -eq 302 ]; then exit 0; else exit 1; fi

@@ -1,0 +1,18 @@
+---
+# Переменные по умолчанию для роли drupal_deploy
+
+# Состояние стека: "present" (запустить) или "absent" (удалить)
+drupal_stack_state: "present"
+
+# Папка на сервере, где будет лежать проект
+drupal_project_dir: "/opt/drupal_app"
+
+# Версии образов (можно менять по ТЗ)
+mariadb_version: "10.11"
+drupal_version: "10-php8.1-apache"
+
+# Настройки базы данных (можно менять по ТЗ)
+db_root_password: "root_password_ansible"
+db_name: "drupal_db_ansible"
+db_user: "drupal_user_ansible"
+db_password: "drupal_password_ansible"

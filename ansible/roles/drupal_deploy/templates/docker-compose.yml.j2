@@ -1,0 +1,40 @@
+version: '3.8'
+
+networks:
+  drupal_net:
+    driver: bridge
+
+volumes:
+  drupal_data:
+  db_data:
+
+services:
+  db_server:
+    image: mariadb:{{ mariadb_version }}
+    container_name: drupal_db_ansible
+    restart: always
+    networks:
+      - drupal_net
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ db_root_password }}
+      MYSQL_DATABASE: {{ db_name }}
+      MYSQL_USER: {{ db_user }}
+      MYSQL_PASSWORD: {{ db_password }}
+    volumes:
+      - db_data:/var/lib/mysql
+
+  drupal_site:
+    image: drupal:{{ drupal_version }}
+    container_name: drupal_site_ansible
+    restart: always
+    networks:
+      - drupal_net
+    depends_on:
+      - db_server
+    environment:
+      DRUPAL_DB_HOST: db_server
+      DRUPAL_DB_NAME: {{ db_name }}
+      DRUPAL_DB_USER: {{ db_user }}
+      DRUPAL_DB_PASSWORD: {{ db_password }}
+    volumes:
+      - drupal_data:/var/www/html/modules

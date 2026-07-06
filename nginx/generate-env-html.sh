@@ -1,9 +1,7 @@
 #!/bin/sh
-
-# Путь к нашему index.html внутри контейнера
 TARGET_FILE="/opt/html/root/index.html"
+mkdir -p /opt/html/root
 
-# Создаем структуру HTML-файла и пишем туда вывод команды env
 cat << EOF > $TARGET_FILE
 <!DOCTYPE html>
 <html lang="ru">
@@ -21,5 +19,4 @@ $(env | sort)
 </body>
 </html>
 EOF
-
 echo "Environment variables successfully written to $TARGET_FILE"

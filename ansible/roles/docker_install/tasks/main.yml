@@ -1,0 +1,82 @@
+---
+# ==========================================
+# СЦЕНАРИЙ УСТАНОВКИ (docker_state == "present")
+# ==========================================
+
+- name: "Установка вспомогательных системных пакетов"
+  ansible.builtin.apt:
+    name: "{{ docker_required_packages }}"
+    state: present
+    update_cache: yes
+  when: docker_state == "present"
+
+- name: "Создание директории для ключей APT"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: docker_state == "present"
+
+- name: "Добавление официального GPG-ключа Docker"
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+    keyring: /etc/apt/keyrings/docker.gpg
+  when: docker_state == "present"
+
+- name: "Подключение репозитория Docker"
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+    state: present
+    filename: docker
+  when: docker_state == "present"
+
+- name: "Установка Docker и Docker Compose"
+  ansible.builtin.apt:
+    name:
+      - "docker-ce{{ '=' + docker_version if docker_version != 'latest' else '' }}"
+      - "docker-ce-cli{{ '=' + docker_version if docker_version != 'latest' else '' }}"
+      - "containerd.io"
+      - "docker-compose-plugin{{ '=' + docker_compose_version if docker_compose_version != 'latest' else '' }}"
+    state: present
+    update_cache: yes
+  when: docker_state == "present"
+
+
+# ==========================================
+# СЦЕНАРИЙ УДАЛЕНИЯ (docker_state == "absent")
+# ==========================================
+
+- name: "Остановка службы Docker перед удалением"
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  ignore_errors: yes  # Если Docker не был установлен, игнорируем ошибки
+  loop:
+    - docker.socket
+    - docker
+  when: docker_state == "absent"
+
+- name: "Полное удаление пакетов Docker и Docker Compose"
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+      - docker-buildx-plugin
+    state: absent
+    purge: yes  # Стереть также все конфигурационные файлы пакетов
+  when: docker_state == "absent"
+
+- name: "Удаление всех остаточных сущностей (каталогов данных и образов)"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /var/lib/docker        # Вся база данных контейнеров, томов и образов (по ТЗ)
+    - /var/lib/containerd    # Данные рантайма containerd
+    - /etc/docker            # Настройки Docker демона
+    - /etc/apt/keyrings/docker.gpg
+  when: docker_state == "absent"

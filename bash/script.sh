@@ -143,3 +143,12 @@ if [ $STATUS -eq 0 ] && [ -f "$TARGET_PATH" ]; then
     echo "Полный путь от корня ФС: $FULL_PATH"
     echo "----------------------------------------"
 fi
+# --- Автоматическая передача результатов в Docker Compose ---
+# Извлекаем самое популярное слово (2-я колонка первой строки TOP5)
+AUTO_WORD=$(echo "$TOP5" | head -n 1 | awk '{print $2}')
+# Извлекаем его частоту (1-я колонка первой строки TOP5)
+AUTO_FREQ=$(echo "$TOP5" | head -n 1 | awk '{print $1}')
+
+# Записываем их в файл .env в корне проекта (на один уровень выше папки bash)
+echo "POPULAR_WORD=$AUTO_WORD" > "$SCRIPT_DIR/../.env"
+echo "WORD_FREQUENCY=$AUTO_FREQ" >> "$SCRIPT_DIR/../.env"
