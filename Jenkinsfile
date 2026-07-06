@@ -42,16 +42,25 @@ pipeline {
                         sh """
                         mkdir -p ./html/upload
                         echo "Jenkins test" > ./html/upload/jenkins_test.txt
-                        GATEWAY_IP=\$(ip route | grep default | awk '{print \$3}')
-                        curl -k --resolve site.devops:443:\$GATEWAY_IP -f https://site.devops/upload/jenkins_test.txt
+                        # Пробуем получить IP через host.docker.internal, если пусто — берем gateway
+                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}')
+                        if [ -z "\$HOST_IP" ]; then
+                            HOST_IP=\$(ip route | grep default | awk '{print \$3}')
+                        fi
+                        echo "Testing via Host IP: \$HOST_IP"
+                        curl -k --resolve site.devops:443:\$HOST_IP -f https://site.devops/upload/jenkins_test.txt
                         """
                     }
                 }
                 stage('Test Drupal API') {
                     steps {
                         sh """
-                        GATEWAY_IP=\$(ip route | grep default | awk '{print \$3}')
-                        curl -k --resolve site.devops:443:\$GATEWAY_IP -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
+                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}')
+                        if [ -z "\$HOST_IP" ]; then
+                            HOST_IP=\$(ip route | grep default | awk '{print \$3}')
+                        fi
+                        echo "Testing via Host IP: \$HOST_IP"
+                        curl -k --resolve site.devops:443:\$HOST_IP -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
                         """
                     }
                 }
