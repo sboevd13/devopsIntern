@@ -30,7 +30,7 @@ pipeline {
         // 3. Деплой через docker-compose
         stage('Deploy') {
             steps {
-                sh 'docker compose down && docker compose up -d --build'
+                sh 'docker compose up -d --build db_server drupal_site nginx_proxy'
             }
         }
 
