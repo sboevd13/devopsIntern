@@ -42,8 +42,8 @@ pipeline {
                         sh """
                         mkdir -p ./html/upload
                         echo "Jenkins test" > ./html/upload/jenkins_test.txt
-                        # Пробуем получить IP через host.docker.internal, если пусто — берем gateway
-                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}')
+                        # Фильтруем вывод, оставляя только IPv4 (исключаем двоеточия)
+                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}' | grep -v : | head -n 1)
                         if [ -z "\$HOST_IP" ]; then
                             HOST_IP=\$(ip route | grep default | awk '{print \$3}')
                         fi
@@ -55,7 +55,7 @@ pipeline {
                 stage('Test Drupal API') {
                     steps {
                         sh """
-                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}')
+                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}' | grep -v : | head -n 1)
                         if [ -z "\$HOST_IP" ]; then
                             HOST_IP=\$(ip route | grep default | awk '{print \$3}')
                         fi
