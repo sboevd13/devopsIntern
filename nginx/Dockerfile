@@ -31,3 +31,7 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.d/50-dynamic-auth-and-static.sh && \
     echo 'echo "</pre></body></html>" >> /opt/html/root/static.html' >> /docker-entrypoint.d/50-dynamic-auth-and-static.sh && \
     echo '/usr/local/bin/generate-env-html.sh' >> /docker-entrypoint.d/50-dynamic-auth-and-static.sh && \
     chmod +x /docker-entrypoint.d/50-dynamic-auth-and-static.sh
+
+# Копируем SSL-сертификаты и ключи прямо внутрь образа (для безопасности в CI/CD)
+COPY ./certs/devops.crt /etc/nginx/ssl/devops.crt
+COPY ./certs/devops.key /etc/nginx/ssl/devops.key
