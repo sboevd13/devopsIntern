@@ -42,14 +42,16 @@ pipeline {
                         sh """
                         mkdir -p ./html/upload
                         echo "Jenkins test" > ./html/upload/jenkins_test.txt
-                        curl -k --resolve site.devops:443:127.0.0.1 -f https://site.devops/upload/jenkins_test.txt
+                        GATEWAY_IP=\$(ip route | grep default | awk '{print \$3}')
+                        curl -k --resolve site.devops:443:\$GATEWAY_IP -f https://site.devops/upload/jenkins_test.txt
                         """
                     }
                 }
                 stage('Test Drupal API') {
                     steps {
                         sh """
-                        curl -k --resolve site.devops:443:127.0.0.1 -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
+                        GATEWAY_IP=\$(ip route | grep default | awk '{print \$3}')
+                        curl -k --resolve site.devops:443:\$GATEWAY_IP -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
                         """
                     }
                 }
