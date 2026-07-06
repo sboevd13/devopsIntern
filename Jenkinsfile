@@ -44,7 +44,8 @@ pipeline {
                             sh """
                             mkdir -p ./html/upload
                             echo "Jenkins test" > ./html/upload/jenkins_test.txt
-                            # Получаем внутренний IP-адрес Nginx напрямую из сети Docker
+                            # Копируем файл напрямую внутрь контейнера Nginx, обходя проблемы монтирования
+                            docker cp ./html/upload/jenkins_test.txt nginx_container:/opt/html/upload/jenkins_test.txt
                             HOST_IP=\$(getent hosts nginx_container | awk '{print \$1}')
                             echo "Testing via Nginx Container IP: \$HOST_IP"
                             curl -k --resolve site.devops:443:\$HOST_IP -f https://site.devops/upload/jenkins_test.txt
