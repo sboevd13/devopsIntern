@@ -76,9 +76,6 @@ services:
       - POPULAR_WORD=${POPULAR_WORD}          # <-- Docker Compose сам возьмет это из .env
       - WORD_FREQUENCY=${WORD_FREQUENCY}      # <-- Docker Compose сам возьмет это из .env
     volumes:
-      # Сертификаты
-      - ./certs/devops.crt:/etc/nginx/ssl/devops.crt:ro
-      - ./certs/devops.key:/etc/nginx/ssl/devops.key:ro
       # Статика и upload
       - ./html/root:/opt/html/root
       - ./html/upload:/opt/html/upload
