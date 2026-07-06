@@ -29,42 +29,38 @@ pipeline {
 
         // 3. Деплой через docker-compose
         stage('Deploy') {
-            steps {
-                sh 'docker compose up -d --build db_server drupal_site nginx_proxy'
+                steps {
+                    sh 'docker compose up -d --build db_server drupal_site nginx_proxy'
+                    // Подключаем сам Jenkins к сети нашего приложения (если он еще не там)
+                    sh 'docker network connect devopsintern_devops_net jenkins_local || true'
+                }
             }
-        }
 
-        // 4. Тестирование (Параллельный запуск стадий в Jenkins)
-        stage('Parallel Tests') {
-            parallel {
-                stage('Test Upload') {
-                    steps {
-                        sh """
-                        mkdir -p ./html/upload
-                        echo "Jenkins test" > ./html/upload/jenkins_test.txt
-                        # Фильтруем вывод, оставляя только IPv4 (исключаем двоеточия)
-                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}' | grep -v : | head -n 1)
-                        if [ -z "\$HOST_IP" ]; then
-                            HOST_IP=\$(ip route | grep default | awk '{print \$3}')
-                        fi
-                        echo "Testing via Host IP: \$HOST_IP"
-                        curl -k --resolve site.devops:443:\$HOST_IP -f https://site.devops/upload/jenkins_test.txt
-                        """
+            // 4. Тестирование (Параллельный запуск стадий в Jenkins)
+            stage('Parallel Tests') {
+                parallel {
+                    stage('Test Upload') {
+                        steps {
+                            sh """
+                            mkdir -p ./html/upload
+                            echo "Jenkins test" > ./html/upload/jenkins_test.txt
+                            # Получаем внутренний IP-адрес Nginx напрямую из сети Docker
+                            HOST_IP=\$(getent hosts nginx_container | awk '{print \$1}')
+                            echo "Testing via Nginx Container IP: \$HOST_IP"
+                            curl -k --resolve site.devops:443:\$HOST_IP -f https://site.devops/upload/jenkins_test.txt
+                            """
+                        }
                     }
-                }
-                stage('Test Drupal API') {
-                    steps {
-                        sh """
-                        HOST_IP=\$(getent hosts host.docker.internal | awk '{print \$1}' | grep -v : | head -n 1)
-                        if [ -z "\$HOST_IP" ]; then
-                            HOST_IP=\$(ip route | grep default | awk '{print \$3}')
-                        fi
-                        echo "Testing via Host IP: \$HOST_IP"
-                        curl -k --resolve site.devops:443:\$HOST_IP -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
-                        """
+                    stage('Test Drupal API') {
+                        steps {
+                            sh """
+                            HOST_IP=\$(getent hosts nginx_container | awk '{print \$1}')
+                            echo "Testing via Nginx Container IP: \$HOST_IP"
+                            curl -k --resolve site.devops:443:\$HOST_IP -u my_drupal_admin:my_super_password -s -o /dev/null -w "%{http_code}" https://site.devops/dp/core/install.php
+                            """
+                        }
                     }
                 }
             }
-        }
     }
 }
