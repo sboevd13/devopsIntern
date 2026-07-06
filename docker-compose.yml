@@ -76,13 +76,9 @@ services:
       - POPULAR_WORD=${POPULAR_WORD}          # <-- Docker Compose сам возьмет это из .env
       - WORD_FREQUENCY=${WORD_FREQUENCY}      # <-- Docker Compose сам возьмет это из .env
     volumes:
-      # Монтируем шаблон — Nginx превратит его в /etc/nginx/conf.d/default.conf автоматически
-      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       # Сертификаты
       - ./certs/devops.crt:/etc/nginx/ssl/devops.crt:ro
       - ./certs/devops.key:/etc/nginx/ssl/devops.key:ro
       # Статика и upload
       - ./html/root:/opt/html/root
       - ./html/upload:/opt/html/upload
-      # Твой скрипт генерации env в index.html
-      - ./nginx/generate-env-html.sh:/docker-entrypoint.d/40-generate-env-html.sh:ro
