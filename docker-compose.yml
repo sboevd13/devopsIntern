@@ -32,10 +32,10 @@ services:
     networks:
       - devops_net
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: my_secure_root_password
       MYSQL_DATABASE: drupal_db
       MYSQL_USER: drupal_user
-      MYSQL_PASSWORD: drupal_password
+      MYSQL_PASSWORD: my_secure_drupal_password
     volumes:
       - db_data:/var/lib/mysql
 
@@ -71,7 +71,7 @@ services:
     depends_on:
       - drupal_site
     environment:
-      - DRUPAL_PROXY_PATH=/dp/             # Настраиваемый путь к Drupal по ТЗ
+      - DRUPAL_PROXY_PATH=/my-drupal/             # Настраиваемый путь к Drupal по ТЗ
       - BASIC_AUTH_PASSWORD=my_super_password # Пароль Basic Auth (задается при запуске)
       - POPULAR_WORD=${POPULAR_WORD}          # <-- Docker Compose сам возьмет это из .env
       - WORD_FREQUENCY=${WORD_FREQUENCY}      # <-- Docker Compose сам возьмет это из .env
