@@ -31,7 +31,7 @@ pipeline {
         // 3. Деплой через docker-compose
         stage('Deploy') {
                 steps {
-                    sh 'docker compose up -d --build db_server drupal_site nginx_proxy'
+                    sh 'docker compose up -d --build --force-recreate --remove-orphans'
                     // Подключаем сам Jenkins к сети нашего приложения (если он еще не там)
                     sh 'docker network connect devopsintern_devops_net jenkins_local || true'
                 }
