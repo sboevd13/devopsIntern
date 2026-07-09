@@ -38,6 +38,11 @@ server {
     }
 }
 
+
+server {
+    listen 80;
+    server_name site.devops;
+    return 301 https://$host$request_uri;
 # Авторедирект с HTTP на HTTPS
 server {
     listen 443 ssl;
