@@ -40,7 +40,19 @@ server {
 
 # Авторедирект с HTTP на HTTPS
 server {
-    listen 80;
-    server_name site.devops;
-    return 301 https://$host$request_uri;
+    listen 443 ssl;
+    server_name jenkins.devops;
+
+    ssl_certificate     /etc/nginx/ssl/devops.crt;
+    ssl_certificate_key /etc/nginx/ssl/devops.key;
+
+    location / {
+        # Стучимся напрямую в контейнер Jenkins по его имени в сети Docker
+        proxy_pass http://jenkins_local:8080;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }

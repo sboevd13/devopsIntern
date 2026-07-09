@@ -79,3 +79,5 @@ services:
       # Статика и upload
       - ./html/root:/opt/html/root
       - ./html/upload:/opt/html/upload
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
