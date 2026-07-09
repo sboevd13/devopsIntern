@@ -15,15 +15,17 @@ services:
     restart: always
     ports:
       - "5000:5000"
+    networks:
+      devops_net:
+        aliases:
+          - registry.devops
     environment:
       REGISTRY_AUTH: htpasswd
       REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
     volumes:
       - ./registry/auth:/auth:ro
-      - registry_data:/var/lib/registry
-    networks:
-      - devops_net  
+      - registry_data:/var/lib/registry  
 
   db_server:
     image: mariadb:10.11

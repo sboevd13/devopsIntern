@@ -2,7 +2,7 @@ pipeline {
     agent any // Предполагается, что на Jenkins-ноде установлен Docker и права настроены
 
     environment {
-        REGISTRY_URL = "registry:5000"
+        REGISTRY_URL = "registry.devops:5000"
         REGISTRY_USER = "registry_user"
         REGISTRY_PASSWORD = "registry_password"
     }
@@ -11,7 +11,8 @@ pipeline {
         // 1. Запуск Bash-скрипта
         stage('Run Bash Script') {
             steps {
-                sh 'chmod +x ./bash/script.sh'
+                sh 'docker network connect devops-intership_devops_net jenkins_local || true'
+		sh 'chmod +x ./bash/script.sh'
                 sh './bash/script.sh "https://ya.ru" "https://avidreaders.ru/download/voyna-i-mir-tom-1.html?f=txt"'
             }
         }
