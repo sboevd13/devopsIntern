@@ -12,7 +12,7 @@ pipeline {
         stage('Run Bash Script') {
             steps {
                 sh 'docker network connect devops-intership_devops_net jenkins_local || true'
-		sh 'chmod +x ./bash/script.sh'
+				sh 'chmod +x ./bash/script.sh'
                 sh './bash/script.sh "https://ya.ru" "https://avidreaders.ru/download/voyna-i-mir-tom-1.html?f=txt"'
             }
         }
